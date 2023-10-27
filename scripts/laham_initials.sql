@@ -102,13 +102,19 @@ GROUP BY namefirst,namelast,namegiven,schoolname;
 
  --ans          
 		 
-		  SELECT yearid, 
-		  SUM(po) as total_po,
-           CASE
+		  
+	  	  SELECT                                       
+		  CASE
+		    WHEN pos ='OF' THEN 'Outfield'
 	    	WHEN pos IN ('SS','1B','2B','3B') THEN 'Infield'
-            WHEN pos IN ('P','C') THEN 'battery'
-            ELSE 'Outfield'
-		   
+            WHEN pos IN('P', 'C') THEN 'Battery'
+			 END AS player_group,
+			SUM(po) as total_po
+		    FROM fielding
+		   WHERE yearid = 2016
+		   GROUP BY player_group
+		   ORDER BY total_po;
+           
 		   
 -- ans total 7rows
 select*from pitching;
@@ -141,6 +147,8 @@ Round the numbers you report to 2 decimal places. Do the same for home runs per 
 where __success__ is measured as the percentage of stolen base attempts which are successful
 . (A stolen base attempt results either in a stolen base or being caught stealing.) 
 Consider only players who attempted _at least_ 20 stolen bases.
+
+select*from Fieldingpost;
 	
 
 7.  From 1970 – 2016, what is the largest number of wins for a team that did not win the world series?
@@ -194,11 +202,17 @@ team name, and average attendance. Repeat for the lowest 5 average attendance.
  
 
 
-9. Which managers have won the TSN Manager of the Year award in both the National League (NL) and the American League (AL)?
+--9. Which managers have won the TSN Manager of the Year award in both the National League (NL) and the American League (AL)?
 Give their full name and 
 the teams that they were managing when they won the award.
-
-
+--ans
+  SELECT DISTINCT p.namefirst,p.namelast,m.teamid
+  FROM awardsmanagers a
+  JOIN people p
+  USING(playerid)
+  JOIN managershalf m
+  using(playerid)
+  where a.awardid='TSN Manager of the Year' and a.lgid IN('NA','AL');
 	
 
 10. Find all players who hit their career highest number of home runs in 2016.
