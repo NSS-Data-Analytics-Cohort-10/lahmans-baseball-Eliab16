@@ -312,24 +312,45 @@ As you do this analysis, keep in mind that salaries across the whole league tend
 so you may want to look on a year-by-year basis.
 
  
- SELECT t.yearid,
- corr(t.w,s.total_salary) as correlation
+ SELECT t.yearid,teamid,
+ corr(t.w,s.salary) as correlation
  FROM teams as t
  JOIN (
-  SELECT yearid,SUM(salary) AS total_salary
+  SELECT yearid,SUM(salary) AS salary
   FROM salaries
   WHERE yearid>=2000
  GROUP BY yearid
  ) as s
- ON t.yearid = s. yearid
+ ON t.teamid = s.teamid
  WHERE t.yearid>=2000
  GROUP BY t.yearid
  ORDER BY t.yearid;
-
-
-
-
-
+-- not working-------
+    SELECT corr(w,salary) AS correlation
+	FROM(
+	SELECT yearid,
+		
+		
+ with team AS(
+ SELECT
+	 t.yearid,
+	 t.w,
+	 s.salary,
+	 t.teamid,
+ ROW_NUMBER()OVER(PARTITION BY t.yearid ORDER BY s.salary) as total_salary,
+ ROW_NUMBER()OVER (PARTITION BY t.yearid ORDER BY t.w) as total_wins	
+ FROM teams t
+ INNER JOIN salaries s
+ ON t.teamid=s.teamid
+ INNER JOIN relation r	 
+ ON s.yearid=r.yearid	  
+ WHERE yearid >=200
+)
+ SELECT 
+  corr(total_salary,totalwins) as correlation
+  FROM relation r;
+---notworking		
+		
 12. In this question, you will explore the connection between number of wins and attendance.
     <ol type="a">
       <li>Does there appear to be any correlation between attendance at home games and number of wins? </li>
