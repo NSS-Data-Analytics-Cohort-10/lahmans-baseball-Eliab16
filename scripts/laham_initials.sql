@@ -73,7 +73,7 @@ GROUP BY namefirst,namelast,namegiven,schoolname;
 	USING (playerid)
 	where schoolname='Vanderbilt University'
 	group by namefirst,namegiven,namelast,schoolname
-	order by total_salary;
+	order by total_salary DESC;
 	
 -Sort this list in descending order by the total salary earned. 
 ---Which Vanderbilt player earned the most money in the majors?
@@ -276,6 +276,31 @@ the teams that they were managing when they won the award.
 	---	 select*from salaries;
 
     
+WITH career_hr AS(
+		SELECT DISTINCT playerid,MAX(hr) AS max_hr 
+	    FROM pitching 
+		WHERE yearid<=2016
+        GROUP BY playerid
+		HAVING COUNT(DISTINCT yearid)>=10
+	    ),
+	player_hr_2016 AS (
+	    SELECT DISTINCT playerid
+		FROM pitchingpost
+		WHERE yearid=2016 
+		GROUP BY playerid
+		HAVING SUM (HR)>=1
+		)
+	SELECT DISTINCT p.namefirst,p.namelast,
+		pt.hr as career_high_hr
+		FROM people p
+		INNER JOIN career_hr chr
+		ON p.playerid=chr.playerid
+		INNER JOIN pitching pt
+		ON p.playerid=pt.playerid
+		INNER JOIN player_hr_2016 phr
+		ON p.playerid=phr.playerid
+		WHERE Pt.hr IS NOT NULL
+		ORDER BY p.namelast,p.namefirst;
 		
 		
 
@@ -287,7 +312,20 @@ As you do this analysis, keep in mind that salaries across the whole league tend
 so you may want to look on a year-by-year basis.
 
  
-  
+ SELECT t.yearid,
+ corr(t.w,s.total_salary) as correlation
+ FROM teams as t
+ JOIN (
+  SELECT yearid,SUM(salary) AS total_salary
+  FROM salaries
+  WHERE yearid>=2000
+ GROUP BY yearid
+ ) as s
+ ON t.yearid = s. yearid
+ WHERE t.yearid>=2000
+ GROUP BY t.yearid
+ ORDER BY t.yearid;
+
 
 
 
