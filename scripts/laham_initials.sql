@@ -74,10 +74,11 @@ GROUP BY namefirst,namelast,namegiven,schoolname;
 	where schoolname='Vanderbilt University'
 	group by namefirst,namegiven,namelast,schoolname
 	order by total_salary;
+	
 -Sort this list in descending order by the total salary earned. 
 ---Which Vanderbilt player earned the most money in the majors?
 
-  SELECT namefirst,namelast,schoolname,
+  SELECT DISTINCT namefirst,namelast,schoolname,
 	max(salary):: numeric:: money as max_salary
 	 FROM schools
 	INNER JOIN collegeplaying
@@ -87,8 +88,8 @@ GROUP BY namefirst,namelast,namegiven,schoolname;
 	INNER JOIN people
 	USING (playerid)
 	where schoolname='Vanderbilt University'
-	group by namefirst,namegiven,namelast,schoolname,salary;
-	
+	group by namefirst,namegiven,namelast, schoolname
+	order by max_salary DESC;
   
   
     
@@ -122,24 +123,43 @@ select*from pitching;
 -- 5. Find the average number of strikeouts per game by decade since 1920.
 Round the numbers you report to 2 decimal places. Do the same for home runs per game. Do you see any trends?
 --ans   
-  SELECT yearid, (yearid/10)*10 AS decade,
+  SELECT  (yearid/10)*10 AS decade,
    ROUND (AVG(SO/G),2) AS AVG_strikeouts_per_game
    FROM pitching
    where yearid >=1920
-   GROUP BY yearid
+   GROUP BY decade
    ORDER BY AVG_strikeouts_per_game;
+   
+   
+   
+   
+   
+ WITH strikeouts_per_decade AS(
+	  SELECT
+	  (yearid/10)*10 AS decade,
+	  count(G) AS total_games,
+	  AVG(SO) AS average_strikeouts
+	  FROM pitching
+	  WHERE yearid >=1920
+	  GROUP BY decade
+ )
+      SELECT decade,
+	  ROUND(average_strikeouts/total_games,2) AS average_strikeout_per_game
+      FROM strikeouts_per_decade
+	  ORDER BY decade;
+   
    
    
  --ans
    
-   SELECT yearid, (yearid/10)*10 AS decade,
+   SELECT  (yearid/10)*10 AS decade,
    ROUND (AVG(HR/G),2) AS AVG_Homeruns_per_game
    FROM pitching
    where yearid >=1920
-   GROUP BY yearid
+   GROUP BY decade
    ORDER BY AVG_Homeruns_per_game;
  
-  the year is after 1965 and Homeruns have lower avg_per_game
+  
  
    
 
@@ -215,18 +235,62 @@ the teams that they were managing when they won the award.
   where a.awardid='TSN Manager of the Year' and a.lgid IN('NA','AL');
 	
 
-10. Find all players who hit their career highest number of home runs in 2016.
-Consider only players who have played in the league for at least 10 years, 
-and who hit at least one home run in 2016. 
-Report the players' first and last names and the number of home runs they hit in 2016.
+--10. Find all players who hit their career highest number of home runs in 2016.    
+--Consider only players who have played in the league for at least 10 years, 
+--and who hit at least one home run in 2016. 
+--Report the players' first and last names and the number of home runs they hit in 2016.
+   
+   select*from salaries;
 
+    WITH career_highest AS(
+		SELECT DISTINCT playerid,MAX(hr) AS max_hr 
+	    FROM pitching
+        GROUP BY playerid
+		),
+	player_hr_2016 AS (
+	    SELECT DISTINCT playerid,sum(hr) AS hr_2016
+		FROM people
+		WHERE yearid=2016
+		GROUP BY playerid
+		),
+		Qualified_players AS(
+		SELECT DISTINCT  c.playerid
+	    FROM career_highest c
+        INNER JOIN player_hr_2016 h
+		ON c.playerid=h.playerid
+		WHERE h.hr_2016>0
+		HAVING COUNT(DISTINCT EXTRACT(YEAR FROM h.yearid))>=10
+		)
+		SELECT DISTINCT p.namefirst,p.namelast,c.high_HR_carrer,h.hr_2016
+		FROM career_highest c
+		INNER JOIN player_hr_2016 h
+		ON c.playerid=h.playerid
+		INNER JOIN people p
+		ON c.playerid=p.playerid
+		INNER JOIN Qualified_player
+		ON c.playerid=e.playerid
+		WHERE h.hr_2016=c.career_highest;
+		
+		
+		
+	---	 select*from salaries;
 
-select*from pitching;
-
+    
+		
+		
 
 **Open-ended questions**
 
-11. Is there any correlation between number of wins and team salary? Use data from 2000 and later to answer this question. As you do this analysis, keep in mind that salaries across the whole league tend to increase together, so you may want to look on a year-by-year basis.
+11. Is there any correlation between number of wins and team salary? 
+Use data from 2000 and later to answer this question. 
+As you do this analysis, keep in mind that salaries across the whole league tend to increase together, 
+so you may want to look on a year-by-year basis.
+
+ 
+  
+
+
+
 
 12. In this question, you will explore the connection between number of wins and attendance.
     <ol type="a">
