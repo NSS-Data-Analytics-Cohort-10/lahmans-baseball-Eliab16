@@ -11,7 +11,8 @@
 ---1. What range of years for baseball games played does the provided database cover? 
 ---ans
  
- SELECT MIN(year),MAX(year)
+ SELECT MIN(year),
+ MAX(year)
  FROM homegames;
 
  ANS 1871-2016
@@ -76,7 +77,7 @@ GROUP BY namefirst,namelast,namegiven,schoolname;
 	order by total_salary DESC;
 	
 -Sort this list in descending order by the total salary earned. 
----Which Vanderbilt player earned the most money in the majors?
+--ans Which Vanderbilt player earned the most money in the majors?
 
   SELECT DISTINCT namefirst,namelast,schoolname,
 	max(salary):: numeric:: money as max_salary
@@ -90,7 +91,7 @@ GROUP BY namefirst,namelast,namegiven,schoolname;
 	where schoolname='Vanderbilt University'
 	group by namefirst,namegiven,namelast, schoolname
 	order by max_salary DESC;
-  
+  ---  ans David Price
   
     
 
@@ -104,22 +105,27 @@ GROUP BY namefirst,namelast,namegiven,schoolname;
  --ans          
 		 
 		  
-	  	  SELECT                                       
+        SELECT                                       
 		  CASE
 		    WHEN pos ='OF' THEN 'Outfield'
 	    	WHEN pos IN ('SS','1B','2B','3B') THEN 'Infield'
             WHEN pos IN('P', 'C') THEN 'Battery'
-			 END AS player_group,
+			END AS player_group,
 			SUM(po) as total_po
 		    FROM fielding
-		   WHERE yearid = 2016
-		   GROUP BY player_group
-		   ORDER BY total_po;
+		    WHERE yearid = 2016
+		    GROUP BY player_group
+		    ORDER BY total_po;
+		   
+    	   
+     	   
+ANS "Outfield"  29560
+    "Battery"   41424
+    "Infield"	58934  
+		     
            
 		   
--- ans total 7rows
-select*from pitching;
-		   
+  
 -- 5. Find the average number of strikeouts per game by decade since 1920.
 Round the numbers you report to 2 decimal places. Do the same for home runs per game. Do you see any trends?
 --ans   
@@ -131,7 +137,7 @@ Round the numbers you report to 2 decimal places. Do the same for home runs per 
    ORDER BY AVG_strikeouts_per_game;
    
    
-   
+   or 
    
    
  WITH strikeouts_per_decade AS(
@@ -148,29 +154,24 @@ Round the numbers you report to 2 decimal places. Do the same for home runs per 
       FROM strikeouts_per_decade
 	  ORDER BY decade;
    
-   
-   
- --ans
-   
-   SELECT  (yearid/10)*10 AS decade,
-   ROUND (AVG(HR/G),2) AS AVG_Homeruns_per_game
-   FROM pitching
-   where yearid >=1920
-   GROUP BY decade
-   ORDER BY AVG_Homeruns_per_game;
- 
+  --  ans  see query
   
- 
-   
-
--- 6. Find the player who had the most success stealing bases in 2016,
+  
+   -- 6. Find the player who had the most success stealing bases in 2016,
 where __success__ is measured as the percentage of stolen base attempts which are successful
 . (A stolen base attempt results either in a stolen base or being caught stealing.) 
 Consider only players who attempted _at least_ 20 stolen bases.
 
-select*from Fieldingpost;
-	
-
+   SELECT namefirst,namelast,(sb*100/(sb+cs)) AS psb
+   FROM batting b
+   LEFT JOIN people p
+   USING(playerid)
+   WHERE (sb+cs)>=20 and yearid=2016
+   GROUP BY namefirst,namelast,psb						  
+   ORDER BY psb DESC;
+  
+  --ANS Chris Owings
+   
 7.  From 1970 – 2016, what is the largest number of wins for a team that did not win the world series?
 What is the smallest number of wins for a team that did win the world series? 
 Doing this will probably result in an unusually small number of wins for a world series champion – 
@@ -179,19 +180,37 @@ How often from 1970 – 2016 was it the case that a team with the most wins also
 What percentage of the time?
 --- 1981 small number of wins 
 ---
-SELECT name,YearID,WSWin,SUM(W) as wins ,SUM(L) as losses
+SELECT YearID,Max(W) as maxw, 
+ SUM (CASE WHEN wswin='Y' THEN 1 ELSE 0 END) AS total_wins
 FROM Teams
-WHERE yearID >=1970 AND  yearID !='1981'AND WSWin='Y' 
-GROUP BY name,YearID,WSwin
-ORDER BY wins DESC;
+WHERE yearID >=1970 AND  yearID !='1981'
+GROUP BY YearID
+ORDER BY maxw DESC;
 
---
-
-SELECT name,YearID,WSWin,SUM(W) as wins ,SUM(L) as losses
-FROM Teams
-WHERE yearID >=1970 AND  yearID !='1981'AND WSWin='N' 
-GROUP BY name,YearID,WSwin
-ORDER BY wins ASC;
+--ans  116 most wins without winning the world series,74 least wins by world series.   
+	 
+   with cte AS (
+	           SELECT yearid,max(w) AS maxw
+	           FROM teams
+	           WHERE yearid >=1970 AND yearID NOT IN (1981)
+	           GROUP BY yearid
+	           ORDER BY maxw DESC),
+	   cte1 AS  (
+	       Select teamid,yearid,w,wswin
+	       FROM teams
+	       WHERE yearid >=1970 AND yearID NOT IN (1981)
+	       ORDER BY w DESC
+	       )
+   SELECT SUM(CASE WHEN wswin ='Y' THEN 1 ELSE 0 END) AS total_wins,
+   COUNT(DISTINCT cte.yearid),
+   ROUND(SUM(CASE WHEN wswin ='Y'THEN 1 ELSE 0 END)/COUNT(DISTINCT cte.yearid)::numeric,2)*100 as pt
+   FROM cte1
+   LEFT JOIN cte
+   ON cte.yearid=cte1.yearid AND cte1.w=cte.maxw
+   WHERE maxw IS NOT NULL;
+   
+   for percentage I got help from my group. 
+   
    
 --8. Using the attendance figures from the homegames table, 
 find the teams and parks which had the top 5 average attendance per game in 2016 
@@ -225,16 +244,44 @@ team name, and average attendance. Repeat for the lowest 5 average attendance.
 --9. Which managers have won the TSN Manager of the Year award in both the National League (NL) and the American League (AL)?
 Give their full name and 
 the teams that they were managing when they won the award.
---ans
-  SELECT DISTINCT p.namefirst,p.namelast,m.teamid
-  FROM awardsmanagers a
-  JOIN people p
-  USING(playerid)
-  JOIN managershalf m
-  using(playerid)
-  where a.awardid='TSN Manager of the Year' and a.lgid IN('NA','AL');
+		  
+  WITH nl_winners AS(
+	   SELECT DISTINCT
+	         a.playerid AS nl_manager,
+	         a.awardid,
+	         a.lgid
+	  FROM awardsmanagers a
+	  WHERE a.awardid=  'TSN Manager of the Year' AND a.lgid='NL'
+	   ), 
+	 al_winners AS ( 
+		 
+	  SELECT DISTINCT
+	         a.playerid AS al_manager,
+	         a.awardid,
+	         a.lgid
+	  FROM awardsmanagers a
+      WHERE a.awardid=  'TSN Manager of the Year' AND a.lgid='AL'
+		)
+	    SELECT DISTINCT  CONCAT (p.namefirst,'',p.namelast) as manager_full_name,
+		a.yearid AS year_won,
+		m.teamid AS team_won	     
+		FROM awardsmanagers a
+		INNER JOIN al_winners as al
+	    ON a.playerid=al.al_manager
+	    INNER JOIN nl_winners as nl
+		ON a.playerid=nl.nl_manager
+		INNER JOIN people p
+		 USING(playerid) 	  
+	    INNER JOIN managers m
+		USING (playerid);
+	    ON a.yearid=m.yearid
+		
+			  
+--ans 		"DaveyJohnson"
+             "JimLeyland"	  
+			  
 	
-
+	           
 --10. Find all players who hit their career highest number of home runs in 2016.    
 --Consider only players who have played in the league for at least 10 years, 
 --and who hit at least one home run in 2016. 
@@ -272,14 +319,41 @@ the teams that they were managing when they won the award.
 		WHERE h.hr_2016=c.career_highest;
 		
 		
-		
+		 WITH career_highest AS(
+		SELECT DISTINCT playerid,MAX(hr) AS max_hr 
+	    FROM pitching
+        GROUP BY playerid
+		),
+	player_hr_2016 AS (
+	    SELECT DISTINCT playerid,sum(hr) AS hr_2016
+		FROM people
+		WHERE yearid=2016
+		GROUP BY playerid
+		),
+		Qualified_players AS(
+		SELECT DISTINCT  c.playerid
+	    FROM career_highest c
+        INNER JOIN player_hr_2016 h
+		ON c.playerid=h.playerid
+		WHERE h.hr_2016>0
+		HAVING COUNT(DISTINCT EXTRACT(YEAR FROM h.yearid))>=10
+		)
+		SELECT DISTINCT p.namefirst,p.namelast,c.high_HR_carrer,h.hr_2016
+		FROM career_highest c
+		INNER JOIN player_hr_2016 h
+		ON c.playerid=h.playerid
+		INNER JOIN people p
+		ON c.playerid=p.playerid
+		INNER JOIN Qualified_player
+		ON c.playerid=e.playerid
+		WHERE h.hr_2016=c.career_highest;
 	---	 select*from salaries;
 
     
 WITH career_hr AS(
 		SELECT DISTINCT playerid,MAX(hr) AS max_hr 
 	    FROM pitching 
-		WHERE yearid<=2016
+		WHERE yearid >= EXTRACT(year)
         GROUP BY playerid
 		HAVING COUNT(DISTINCT yearid)>=10
 	    ),
@@ -331,7 +405,7 @@ so you may want to look on a year-by-year basis.
 	SELECT yearid,
 		
 		
- with team AS(
+ with team_data AS(
  SELECT
 	 t.yearid,
 	 t.w,
@@ -341,23 +415,97 @@ so you may want to look on a year-by-year basis.
  ROW_NUMBER()OVER (PARTITION BY t.yearid ORDER BY t.w) as total_wins	
  FROM teams t
  INNER JOIN salaries s
- ON t.teamid=s.teamid
- INNER JOIN relation r	 
- ON s.yearid=r.yearid	  
- WHERE yearid >=200
+ ON t.teamid=s.teamid AND t.yearid=s.yearid
+ WHERE t.yearid >=2000
 )
  SELECT 
-  corr(total_salary,totalwins) as correlation
-  FROM relation r;
----notworking		
+  corr(total_salary,total_wins) as correlation
+  FROM team_data ;
+ --ans correlation coefficient=0.12		
+ the value 0.12 indicate weak positive correlation between number of wins and total salary.	
+		
+		
+		
 		
 12. In this question, you will explore the connection between number of wins and attendance.
     <ol type="a">
       <li>Does there appear to be any correlation between attendance at home games and number of wins? </li>
-      <li>Do teams that win the world series see a boost in attendance the following year? What about teams that made the playoffs? Making the playoffs means either being a division winner or a wild card winner.</li>
+      <li>Do teams that win the world series see a boost in attendance the following year? 
+		What about teams that made the playoffs? Making the playoffs means either being a division winner or a wild card winner.</li>
     </ol>
 
+  select*from homegames;
+  select*from teams;
+  select*from AllstarFull;	
+ with team_data AS(
+    SELECT
+	 t.yearid,
+	 t.w,
+	 h.attendance,
+	 t.teamid,
+ ROW_NUMBER()OVER(PARTITION BY t.yearid ORDER BY h.attendance) as total_attendance,
+ ROW_NUMBER()OVER (PARTITION BY t.yearid ORDER BY t.w) as total_wins	
+ FROM teams t
+ INNER JOIN homegames h
+ ON t.teamid=h.team AND t.yearid=h.year
+ WHERE t.yearid >=2000
+ )
+  SELECT 
+  corr(total_attendance,total_wins) as correlation
+  FROM team_data;	
 
-13. It is thought that since left-handed pitchers are more rare, causing batters to face them less often, that they are more effective. Investigate this claim and present evidence to either support or dispute this claim. First, determine just how rare left-handed pitchers are compared with right-handed pitchers. Are left-handed pitchers more likely to win the Cy Young Award? Are they more likely to make it into the hall of fame?
+		correlation 0.46
+		
+13. It is thought that since left-handed pitchers are more rare,
+		causing batters to face them less often, that they are more effective. 
+		Investigate this claim and present evidence to either support or dispute this claim.
+		First, determine just how rare left-handed pitchers are compared with right-handed pitchers.
+		Are left-handed pitchers more likely to win the Cy Young Award? 
+		Are they more likely to make it into the hall of fame?
 
-  
+ -- ans
+	SELECT COUNT (throws)
+	FROM people
+	where throws ='R';
+		
+--ANS 14480		
+		
+	SELECT COUNT (throws)
+	FROM people 
+	WHERE throws='L';
+		
+--	ans 3654
+		
+		
+	SELECT *from AwardsSharePlayers;
+	WHERE notes ='CY';
+ select*from halloffame;
+ WHERE ;
+--		
+	SELECT throws,awardid	
+	FROM people 
+	INNER JOIN AwardsShareplayers
+	USING (playerid)
+	WHERE throws='L' AND awardid='Cy Young';
+		
+--228
+	SELECT throws,awardid	
+	FROM people 
+	INNER JOIN AwardsShareplayers
+	USING (playerid)
+	WHERE throws='R' AND awardid='Cy Young';
+		
+--557
+		
+		
+		
+		
+		SELECT throws,awardid	
+	FROM people 
+	INNER JOIN AwardsShareplayers
+	USING (playerid)
+	WHERE throws='L' AND awardid='Cy Young';
+		
+		
+		
+		
