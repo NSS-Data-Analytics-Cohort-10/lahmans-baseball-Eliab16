@@ -287,75 +287,15 @@ the teams that they were managing when they won the award.
 --and who hit at least one home run in 2016. 
 --Report the players' first and last names and the number of home runs they hit in 2016.
    
-   select*from salaries;
-
-    WITH career_highest AS(
-		SELECT DISTINCT playerid,MAX(hr) AS max_hr 
-	    FROM pitching
-        GROUP BY playerid
-		),
-	player_hr_2016 AS (
-	    SELECT DISTINCT playerid,sum(hr) AS hr_2016
-		FROM people
-		WHERE yearid=2016
-		GROUP BY playerid
-		),
-		Qualified_players AS(
-		SELECT DISTINCT  c.playerid
-	    FROM career_highest c
-        INNER JOIN player_hr_2016 h
-		ON c.playerid=h.playerid
-		WHERE h.hr_2016>0
-		HAVING COUNT(DISTINCT EXTRACT(YEAR FROM h.yearid))>=10
-		)
-		SELECT DISTINCT p.namefirst,p.namelast,c.high_HR_carrer,h.hr_2016
-		FROM career_highest c
-		INNER JOIN player_hr_2016 h
-		ON c.playerid=h.playerid
-		INNER JOIN people p
-		ON c.playerid=p.playerid
-		INNER JOIN Qualified_player
-		ON c.playerid=e.playerid
-		WHERE h.hr_2016=c.career_highest;
-		
-		
-		 WITH career_highest AS(
-		SELECT DISTINCT playerid,MAX(hr) AS max_hr 
-	    FROM pitching
-        GROUP BY playerid
-		),
-	player_hr_2016 AS (
-	    SELECT DISTINCT playerid,sum(hr) AS hr_2016
-		FROM people
-		WHERE yearid=2016
-		GROUP BY playerid
-		),
-		Qualified_players AS(
-		SELECT DISTINCT  c.playerid
-	    FROM career_highest c
-        INNER JOIN player_hr_2016 h
-		ON c.playerid=h.playerid
-		WHERE h.hr_2016>0
-		HAVING COUNT(DISTINCT EXTRACT(YEAR FROM h.yearid))>=10
-		)
-		SELECT DISTINCT p.namefirst,p.namelast,c.high_HR_carrer,h.hr_2016
-		FROM career_highest c
-		INNER JOIN player_hr_2016 h
-		ON c.playerid=h.playerid
-		INNER JOIN people p
-		ON c.playerid=p.playerid
-		INNER JOIN Qualified_player
-		ON c.playerid=e.playerid
-		WHERE h.hr_2016=c.career_highest;
-	---	 select*from salaries;
+   
 
     
 WITH career_hr AS(
-		SELECT DISTINCT playerid,MAX(hr) AS max_hr 
+		SELECT DISTINCT playerid, MAX(hr) AS max_hr 
 	    FROM pitching 
-		WHERE yearid >= EXTRACT(year)
-        GROUP BY playerid
-		HAVING COUNT(DISTINCT yearid)>=10
+		WHERE yearid =2016
+       GROUP BY playerid
+		--HAVING COUNT(DISTINCT yearid)>=10
 	    ),
 	player_hr_2016 AS (
 	    SELECT DISTINCT playerid
@@ -375,6 +315,7 @@ WITH career_hr AS(
 		ON p.playerid=phr.playerid
 		WHERE Pt.hr IS NOT NULL
 		ORDER BY p.namelast,p.namefirst;
+		
 		
 		
 
@@ -461,51 +402,11 @@ so you may want to look on a year-by-year basis.
 		Investigate this claim and present evidence to either support or dispute this claim.
 		First, determine just how rare left-handed pitchers are compared with right-handed pitchers.
 		Are left-handed pitchers more likely to win the Cy Young Award? 
-		Are they more likely to make it into the hall of fame?
-
- -- ans
-	SELECT COUNT (throws)
-	FROM people
-	where throws ='R';
+		Are they more likely to make it into the hall of fame?-- ans
+	
 		
---ANS 14480		
+	
 		
-	SELECT COUNT (throws)
-	FROM people 
-	WHERE throws='L';
-		
---	ans 3654
-		
-		
-	SELECT *from AwardsSharePlayers;
-	WHERE notes ='CY';
- select*from halloffame;
- WHERE ;
---		
-	SELECT throws,awardid	
-	FROM people 
-	INNER JOIN AwardsShareplayers
-	USING (playerid)
-	WHERE throws='L' AND awardid='Cy Young';
-		
---228
-	SELECT throws,awardid	
-	FROM people 
-	INNER JOIN AwardsShareplayers
-	USING (playerid)
-	WHERE throws='R' AND awardid='Cy Young';
-		
---557
-		
-		
-		
-		
-		SELECT throws,awardid	
-	FROM people 
-	INNER JOIN AwardsShareplayers
-	USING (playerid)
-	WHERE throws='L' AND awardid='Cy Young';
-		
-		
+	
 		
 		
