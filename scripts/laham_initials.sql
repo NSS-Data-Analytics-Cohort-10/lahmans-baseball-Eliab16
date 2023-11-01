@@ -274,7 +274,7 @@ the teams that they were managing when they won the award.
 		 USING(playerid) 	  
 	    INNER JOIN managers m
 		USING (playerid);
-	    ON a.yearid=m.yearid
+	    
 		
 			  
 --ans 		"DaveyJohnson"
@@ -295,7 +295,7 @@ WITH career_hr AS(
 	    FROM pitching 
 		WHERE yearid =2016
        GROUP BY playerid
-		--HAVING COUNT(DISTINCT yearid)>=10
+
 	    ),
 	player_hr_2016 AS (
 	    SELECT DISTINCT playerid
@@ -316,8 +316,8 @@ WITH career_hr AS(
 		WHERE Pt.hr IS NOT NULL
 		ORDER BY p.namelast,p.namefirst;
 		
-		
-		
+-- ans see query 		
+duplicated rows		
 
 **Open-ended questions**
 
@@ -401,12 +401,53 @@ so you may want to look on a year-by-year basis.
 		causing batters to face them less often, that they are more effective. 
 		Investigate this claim and present evidence to either support or dispute this claim.
 		First, determine just how rare left-handed pitchers are compared with right-handed pitchers.
-		Are left-handed pitchers more likely to win the Cy Young Award? 
-		Are they more likely to make it into the hall of fame?-- ans
+--ans 
+		
+ 	SELECT COUNT(throws)
+	FROM people
+	where throws ='R';
+		
+--ANS 14480		
+		
+	SELECT COUNT (throws)
+	FROM people 
+	WHERE throws='L';
+		
+--	ans 3654
+		
+
+--Left handed pitchers have less number of count than right handed pitchers.		
+		
+Are left-handed pitchers more likely to win the Cy Young Award? 
+		
+  SELECT throws,awardid	
+	FROM people 
+	INNER JOIN AwardsShareplayers
+	USING (playerid)
+	WHERE throws='L' AND awardid='Cy Young';
+		
+-- 228  win
+		
+	SELECT throws,awardid	
+	FROM people 
+	INNER JOIN AwardsShareplayers
+	USING (playerid)
+	WHERE throws='R' AND awardid='Cy Young';
+		
+--557	win	
+		
+-- This indicates that there are more right-handed pitchers who have won than left-handed pitchers.		
 	
-		
+ are they more likely to make it into the hall of fame?
 	
-		
-	
-		
-		
+ SELECT p.throws,a.awardid,count(h.playerid) AS h_total_count
+ FROM people p
+ INNER JOIN halloffame h
+ USING(playerid)
+ INNER JOIN AwardsShareplayers a
+ USING(playerid)		
+ WHERE awardid ='Cy Young'
+ GROUP BY p.throws,a.awardid		
+ ORDER BY h_total_count DESC;	
+ 
+  		
