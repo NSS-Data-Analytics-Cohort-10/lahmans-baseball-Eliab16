@@ -129,15 +129,7 @@ ANS "Outfield"  29560
 -- 5. Find the average number of strikeouts per game by decade since 1920.
 Round the numbers you report to 2 decimal places. Do the same for home runs per game. Do you see any trends?
 --ans   
-  SELECT  (yearid/10)*10 AS decade,
-   ROUND (AVG(SO/G),2) AS AVG_strikeouts_per_game
-   FROM pitching
-   where yearid >=1920
-   GROUP BY decade
-   ORDER BY AVG_strikeouts_per_game;
-   
-   
-   or 
+
    
    
  WITH strikeouts_per_decade AS(
@@ -157,6 +149,24 @@ Round the numbers you report to 2 decimal places. Do the same for home runs per 
   --  ans  see query
   
   
+---   Do the same for home runs per game. Do you see any trends?
+  
+     WITH homeruns_per_decade AS(
+	  SELECT
+	  (yearid/10)*10 AS decade,
+	  count(G) AS total_games,
+	  AVG(HR) AS average_Homeruns
+	  FROM pitching
+	  WHERE yearid >=1920
+	  GROUP BY decade
+ )
+      SELECT decade,
+	  ROUND(average_Homeruns/total_games,2) AS average_Homeruns_per_game
+      FROM Homeruns_per_decade
+	  ORDER BY decade;
+     
+	-- average_homerus_per_game---"0" outputs
+	
    -- 6. Find the player who had the most success stealing bases in 2016,
 where __success__ is measured as the percentage of stolen base attempts which are successful
 . (A stolen base attempt results either in a stolen base or being caught stealing.) 
@@ -209,6 +219,9 @@ ORDER BY maxw DESC;
    ON cte.yearid=cte1.yearid AND cte1.w=cte.maxw
    WHERE maxw IS NOT NULL;
    
+   total_wins =12
+   pt= 26
+   count=46--------got help from breakoutrooms
    for percentage I got help from my group. 
    
    
@@ -280,7 +293,7 @@ the teams that they were managing when they won the award.
 --ans 		"DaveyJohnson"
              "JimLeyland"	  
 			  
-	
+	but problem with duplicated rows
 	           
 --10. Find all players who hit their career highest number of home runs in 2016.    
 --Consider only players who have played in the league for at least 10 years, 
@@ -327,25 +340,7 @@ As you do this analysis, keep in mind that salaries across the whole league tend
 so you may want to look on a year-by-year basis.
 
  
- SELECT t.yearid,teamid,
- corr(t.w,s.salary) as correlation
- FROM teams as t
- JOIN (
-  SELECT yearid,SUM(salary) AS salary
-  FROM salaries
-  WHERE yearid>=2000
- GROUP BY yearid
- ) as s
- ON t.teamid = s.teamid
- WHERE t.yearid>=2000
- GROUP BY t.yearid
- ORDER BY t.yearid;
--- not working-------
-    SELECT corr(w,salary) AS correlation
-	FROM(
-	SELECT yearid,
-		
-		
+	
  with team_data AS(
  SELECT
 	 t.yearid,
@@ -375,28 +370,27 @@ so you may want to look on a year-by-year basis.
 		What about teams that made the playoffs? Making the playoffs means either being a division winner or a wild card winner.</li>
     </ol>
 
-  select*from homegames;
-  select*from teams;
-  select*from AllstarFull;	
- with team_data AS(
-    SELECT
-	 t.yearid,
-	 t.w,
-	 h.attendance,
-	 t.teamid,
- ROW_NUMBER()OVER(PARTITION BY t.yearid ORDER BY h.attendance) as total_attendance,
- ROW_NUMBER()OVER (PARTITION BY t.yearid ORDER BY t.w) as total_wins	
- FROM teams t
- INNER JOIN homegames h
- ON t.teamid=h.team AND t.yearid=h.year
- WHERE t.yearid >=2000
- )
-  SELECT 
-  corr(total_attendance,total_wins) as correlation
-  FROM team_data;	
-
-		correlation 0.46
-		
+ 
+    
+	 SELECT corr (h.attendance,t.W) AS correlation_coefficient
+	 FROM homegames h
+	 INNER JOIN teams t
+	 ON t.teamid=h.team; 
+	 
+--ans 	crrelation = 0.1 there is a weak positive correlation between number of wins and attendance.
+	
+	SELECT
+	     corr(h.attendance, CASE WHEN t.wswin='Y' THEN h.attendance END) AS ws_attendance_corr,
+	     corr(h.attendance,CASE WHEN t.Wcwin='Y' or t.Divwin='Y' THEN h.attendance END) as playoff_attendance_corr
+	     FROM homegames h
+		 INNER JOIN teams t
+	     ON t.teamid=h.team
+		 WHERE (t.wswin='Y' OR t.Divwin='Y' OR Wcwin= 'Y' AND t.yearid=t.yearid+1);
+		 
+	--corr=1
+	crrelation coefficient 1 indicates that a perfect positive correlation between variables it means there is relation between 
+	worleds winner attendance and playoffs.
+		 
 13. It is thought that since left-handed pitchers are more rare,
 		causing batters to face them less often, that they are more effective. 
 		Investigate this claim and present evidence to either support or dispute this claim.
@@ -449,5 +443,8 @@ Are left-handed pitchers more likely to win the Cy Young Award?
  WHERE awardid ='Cy Young'
  GROUP BY p.throws,a.awardid		
  ORDER BY h_total_count DESC;	
- 
-  		
+		
+--ans 'R  h_total_count=905
+	  'L' h_total_count=339
+		
+   Right-handed pitchers who have won hall of fame than Left-handed pitchers.		
